@@ -81,9 +81,12 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .newlist span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .newlist small{color:var(--muted);font-family:var(--mono);font-size:12px}
 .blist{display:flex;flex-direction:column;gap:12px}
-.bitem{display:flex;gap:12px;align-items:center}
-.bitem i{flex:none;width:40px;height:40px;border-radius:10px;background:var(--field);border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:20px}
-.bitem b{display:block;font-size:15.5px}.bitem small{color:var(--muted);font-size:13px}
+.btop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.btop b{font-family:var(--display);font-weight:800;font-size:20px}.btop span{color:var(--muted);font-size:13px}
+.bitem{all:unset;box-sizing:border-box;display:flex;gap:14px;align-items:center;cursor:pointer;padding:8px;border-radius:14px;border:1.5px solid var(--line);background:var(--field)}
+.bitem:hover,.bitem:focus-visible{border-color:var(--muted)}
+.bthumb{width:64px;height:64px;flex:none;border-radius:12px;background:#A6DCEA}
+.bitem b{display:block;font-size:16px}.bitem small{color:var(--muted);font-size:13px}
 .treat{background:#FFF6DA;border-color:#EBD58E;color:#1F2A33}
 .treat .eyebrow{color:#6B5A2E}.treat .muted{color:#6B5A2E}
 .treathead{display:flex;gap:14px;align-items:center}
@@ -505,9 +508,14 @@ function renderInfo(){const n=EXR.length,cs=new Set(EXR.map(r=>r.iso)).size;let 
  top.forEach(([iso,c])=>{const b=document.createElement('button');b.className='chip';const fl=FLAGS.find(f=>f.iso===String(iso).toLowerCase());b.innerHTML=(fl?`<img alt="" src="${fl.png}">`:'')+'<span></span><b></b>';b.children[fl?1:0].textContent=cname(iso);b.querySelector('b').textContent=c;b.onclick=()=>{pick({type:'c',iso});$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};T.appendChild(b)});
  const N=$('newest');N.innerHTML='';const nw=EXR.map((r,i)=>[r,i]).sort((a,b)=>(b[0].day-a[0].day)||(b[1]-a[1])).map(x=>x[0]).slice(0,6);if(!nw.length)N.innerHTML='<p class="muted">Belum ada warga. Jadilah tetangga pertama: follow @petakomen lalu komen negaramu di video terbaru.</p>';
  nw.forEach(r=>{const b=document.createElement('button');const fl=FLAGS.find(f=>f.iso===String(r.iso).toLowerCase());b.innerHTML=(fl?`<img alt="" src="${fl.png}">`:'')+'<span></span><small></small>';b.querySelector('span').textContent=r.name+' · '+cname(r.iso);b.querySelector('small').textContent='hari ke-'+r.day;b.onclick=()=>{select(r,true);$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};N.appendChild(b)});
- const B=$('blist');B.innerHTML='';const bs=(SAVED.buildings||[]).slice().reverse();
- if(!bs.length)B.innerHTML='<p class="muted">Belum ada bangunan. Usulkan di komen video terbaru, usulan dengan like terbanyak dibangun di episode berikutnya.</p>';
- bs.forEach(b=>{const d=document.createElement('button');d.className='bitem';d.style.cssText='all:unset;box-sizing:border-box;display:flex;gap:12px;align-items:center;cursor:pointer';d.innerHTML='<i aria-hidden="true">🏛️</i><div><b></b><small></small></div>';d.querySelector('b').textContent=b.label.charAt(0).toUpperCase()+b.label.slice(1);d.querySelector('small').textContent='usulan '+(b.by&&b.by!=='warga'?'@'+b.by:'warga')+(b.iso?' · '+cname(b.iso):'')+(b.day?' · hari ke-'+b.day:'');if(b.ll)d.onclick=()=>{sel=null;$('card').hidden=true;flyLL(b.ll,24);$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};B.appendChild(d)});
+ const B=$('blist');B.innerHTML='';const bs=(SAVED.buildings||[]).map((b,i)=>({...b,_i:i})).slice().reverse();
+ const tb=document.createElement('div');tb.className='btop';tb.innerHTML='<b></b><span></span>';tb.children[0].textContent=bs.length+' bangunan';tb.children[1].textContent='Usulan dengan ❤️ terbanyak dibangun tiap episode';B.appendChild(tb);
+ if(!bs.length){const p=document.createElement('p');p.className='muted';p.textContent='Belum ada bangunan. Usulkan di komen video terbaru, usulan dengan like terbanyak dibangun di episode berikutnya.';B.appendChild(p)}
+ bs.forEach((b,k)=>{const d=document.createElement('button');d.className='bitem';d.type='button';const cv=document.createElement('canvas');cv.width=120;cv.height=120;cv.className='bthumb';
+  try{const keep=ctx;ctx=cv.getContext('2d');ctx.translate(60,96);landmark(b.label,0,0,.62,0);ctx=keep}catch(e){}
+  const tx=document.createElement('div');tx.innerHTML='<b></b><small></small>';const nm=b.label.charAt(0).toUpperCase()+b.label.slice(1);tx.querySelector('b').textContent=nm+(k===0&&b.day===SAVED.day?'  · BARU':'');
+  tx.querySelector('small').textContent=(b.by&&b.by!=='warga'?'usulan @'+b.by:'usulan warga')+(b.likes?' · '+b.likes+' ❤️':'')+(b.iso?' · '+cname(b.iso):'')+(b.day?' · hari ke-'+b.day:'');
+  d.append(cv,tx);if(b.ll)d.onclick=()=>{sel=null;$('card').hidden=true;flyLL(b.ll,18);$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};B.appendChild(d)});
  if(SAVED.updated){const dt=new Date(SAVED.updated+'T12:00:00');if(!isNaN(dt))$('updated').textContent='Diperbarui '+dt.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}
  $('empty').hidden=!!n;if(!n)$('empty').textContent='Peta masih kosong. Follow @petakomen dan komen negaramu di video terbaru untuk jadi tetangga pertama.';
  const L=SAVED.links||{},A=$('aff');A.innerHTML='';if(L.voucherUrl&&/^https:\/\//.test(L.voucherUrl)){const a=document.createElement('a');a.className='btn sun';a.href=L.voucherUrl;a.target='_blank';a.rel='noopener sponsored';a.textContent=L.voucherLabel||'Voucher hari ini';const sm=document.createElement('small');sm.textContent='Link affiliate';A.append(a,sm);A.hidden=false}else A.hidden=true}
