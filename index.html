@@ -305,7 +305,7 @@ document.getElementById('app').appendChild(document.getElementById('pk-markup').
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
 const norm=s=>(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/ +/g,' ');
 function rewind(f){const g=f.geometry;for(const p of g.coordinates){if(d3.geoArea({type:'Polygon',coordinates:p})>2*Math.PI)p.forEach(r=>r.reverse())}return f}
-const FEATS=GEO.features.map(rewind);const BYISO={};FEATS.forEach(f=>BYISO[f.properties.iso]=f);
+const FEATS=GEO.features.map(rewind);const BYISO={};FEATS.forEach(f=>{const o=BYISO[f.properties.iso];if(!o||d3.geoArea(f)>d3.geoArea(o))BYISO[f.properties.iso]=f});
 const ALIAS={amerika:'US',usa:'US',amrik:'US',america:'US',inggris:'GB',england:'GB',uk:'GB',london:'GB',korea:'KR',korsel:'KR',korut:'KP','korea utara':'KP',jepang:'JP',japan:'JP',tokyo:'JP',osaka:'JP',cina:'CN',china:'CN',tiongkok:'CN',arab:'SA','arab saudi':'SA',saudi:'SA',mekah:'SA',makkah:'SA',madinah:'SA',dubai:'AE',uae:'AE',uea:'AE','abu dhabi':'AE',belanda:'NL',holland:'NL',jerman:'DE',germany:'DE',perancis:'FR',prancis:'FR',paris:'FR',swiss:'CH',turki:'TR',mesir:'EG',rusia:'RU','selandia baru':'NZ','new zealand':'NZ',malay:'MY',malaysia:'MY',singapur:'SG',singapura:'SG',filipina:'PH',pinoy:'PH',thailand:'TH',bangkok:'TH',vietnam:'VN','timor leste':'TL',timles:'TL',italia:'IT',spanyol:'ES',yunani:'GR',brasil:'BR',brazil:'BR',kanada:'CA',meksiko:'MX',antartika:'AQ',antarctica:'AQ','kutub selatan':'AQ',norwegia:'NO',swedia:'SE',finlandia:'FI',islandia:'IS',irlandia:'IE',maroko:'MA',afsel:'ZA','afrika selatan':'ZA',palestina:'PS',hongkong:'HK','hong kong':'HK',maladewa:'MV',kamboja:'KH',chili:'CL',kolombia:'CO'};
 const NAMES={};FEATS.forEach(f=>f.properties.alts.forEach(a=>{const k=norm(a).trim();if(k.length>=4)NAMES[k]=f.properties.iso}));Object.assign(NAMES,ALIAS);
 const KEYS=Object.keys(NAMES).sort((a,b)=>b.length-a.length);
@@ -318,7 +318,7 @@ const HOUSE_SUB={'South-Eastern Asia':'stilt','Eastern Asia':'pagoda','Southern 
 const houseType=iso=>HOUSE_ISO[iso]||HOUSE_SUB[(BYISO[iso]||{properties:{}}).properties.sub]||'clapboard';
 const ROOFS=['#E8553B','#3D8BD9','#5BB06A','#F2B33D','#9B6FD0','#E77FA8','#2A9D8F','#C9705A'];
 const COLORW={merah:'#E8553B',biru:'#3D8BD9',hijau:'#5BB06A',kuning:'#F2B33D',ungu:'#9B6FD0',pink:'#E77FA8',oranye:'#F0883A',orange:'#F0883A',hitam:'#3A3F46',putih:'#F4F1EA',coklat:'#8A5A3B',cokelat:'#8A5A3B',tosca:'#2A9D8F'};
-const cname=iso=>(BYISO[iso]||{properties:{id:iso}}).properties.id;
+const SHORTNAME={CN:'Tiongkok',GB:'Inggris',BA:'Bosnia',AE:'Uni Emirat Arab',RU:'Rusia'};const cname=iso=>SHORTNAME[iso]||(BYISO[iso]||{properties:{id:iso}}).properties.id;
 function hash(s){let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0)%100000}
 function placeIn(iso,seed){const f=BYISO[iso];if(!f)return null;let s=seed+1;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};
  const polys=f.geometry.coordinates.map(c=>({c,a:d3.geoArea({type:'Polygon',coordinates:c})}));const tot=polys.reduce((n,p)=>n+p.a,0);const big=polys.reduce((m,p)=>p.a>m.a?p:m,polys[0]);
@@ -473,7 +473,7 @@ mapC.addEventListener('pointerup',endPtr);mapC.addEventListener('pointercancel',
 mapC.addEventListener('wheel',e=>{e.preventDefault();const p=toCanvas(e);zoomAt(p[0],p[1],Math.exp(-e.deltaY*.0015))},{passive:false});
 mapC.addEventListener('dblclick',e=>{const p=toCanvas(e);zoomAt(p[0],p[1],1.8)});
 function tapAt(p){useMap();C=cam0;let best=null,bd=60;for(const r of EXR){const[x,y]=S(r.p);const dd=Math.hypot(x-p[0],y-25-p[1]);if(dd<bd){bd=dd;best=r}}if(best)select(best,false);else{sel=null;$('card').hidden=true}}
-function select(r,fly){sel=r;const c=$('card');c.hidden=false;c.innerHTML='<h3></h3><p></p><p></p>';c.children[0].textContent=r.name;c.children[1].textContent=cname(r.iso)+(r.note?' · '+r.note:'');c.children[2].textContent='@'+r.user+' · warga sejak hari ke-'+r.day;if(fly)flyLL(r.ll,r.iso==='AQ'?60:24)}
+function select(r,fly){sel=r;const c=$('card');c.hidden=false;c.innerHTML='<h3></h3><p></p><p></p>';c.children[0].textContent=r.name;c.children[1].textContent=cname(r.iso)+(r.note?' · '+r.note:'');const no=SAVED.residents.findIndex(x=>x.user===r.user)+1;c.children[2].textContent='@'+r.user+' · Warga #'+String(no).padStart(3,'0')+(no===1?' · warga pertama 🎉':'');if(fly)flyLL(r.ll,r.iso==='AQ'?60:24)}
 $('zin').onclick=()=>zoomAt(mapC.width/2,mapC.height/2,1.6);$('zout').onclick=()=>zoomAt(mapC.width/2,mapC.height/2,1/1.6);$('zworld').onclick=()=>{sel=null;$('card').hidden=true;resetCam(true)};
 // pencarian
 function search(qs){const q=norm(qs).trim();const box=$('results');if(!q){box.hidden=true;return[]}
@@ -494,7 +494,7 @@ function renderInfo(){const n=EXR.length,cs=new Set(EXR.map(r=>r.iso)).size;let 
  const counts={};EXR.forEach(r=>counts[r.iso]=(counts[r.iso]||0)+1);const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);const T=$('top');T.innerHTML='';
  if(!top.length){T.innerHTML='<p class="muted">Belum ada negara. Negaramu bisa jadi yang pertama.</p>'}
  top.forEach(([iso,c])=>{const b=document.createElement('button');b.className='chip';const fl=FLAGS.find(f=>f.iso===String(iso).toLowerCase());b.innerHTML=(fl?`<img alt="" src="${fl.png}">`:'')+'<span></span><b></b>';b.children[fl?1:0].textContent=cname(iso);b.querySelector('b').textContent=c;b.onclick=()=>{pick({type:'c',iso});$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};T.appendChild(b)});
- const N=$('newest');N.innerHTML='';const nw=EXR.slice().sort((a,b)=>b.day-a.day).slice(0,6);if(!nw.length)N.innerHTML='<p class="muted">Belum ada warga. Jadilah tetangga pertama: follow @petakomen lalu komen negaramu di video terbaru.</p>';
+ const N=$('newest');N.innerHTML='';const nw=EXR.map((r,i)=>[r,i]).sort((a,b)=>(b[0].day-a[0].day)||(b[1]-a[1])).map(x=>x[0]).slice(0,6);if(!nw.length)N.innerHTML='<p class="muted">Belum ada warga. Jadilah tetangga pertama: follow @petakomen lalu komen negaramu di video terbaru.</p>';
  nw.forEach(r=>{const b=document.createElement('button');const fl=FLAGS.find(f=>f.iso===String(r.iso).toLowerCase());b.innerHTML=(fl?`<img alt="" src="${fl.png}">`:'')+'<span></span><small></small>';b.querySelector('span').textContent=r.name+' · '+cname(r.iso);b.querySelector('small').textContent='hari ke-'+r.day;b.onclick=()=>{select(r,true);$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};N.appendChild(b)});
  const B=$('blist');B.innerHTML='';const bs=(SAVED.buildings||[]).slice().reverse();
  if(!bs.length)B.innerHTML='<p class="muted">Belum ada bangunan. Usulkan di komen video terbaru, usulan dengan like terbanyak dibangun di episode berikutnya.</p>';
