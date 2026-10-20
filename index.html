@@ -48,6 +48,8 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px;z-index:2}
 .zoom button{width:44px;height:44px;border-radius:12px;border:2px solid #1F2A33;background:#FFFDF6;color:#1F2A33;font:700 20px var(--body);cursor:pointer}
 .zoom button.world{font-size:12px;width:auto;padding:0 8px}
+.zoom button.snd{font-size:19px;margin-bottom:6px}.zoom button.snd[aria-pressed="true"]{background:var(--sun)}
+.sndtip{position:absolute;right:66px;bottom:150px;z-index:2;background:#1F2A33;color:#fff;font-size:13px;padding:6px 12px;border-radius:999px;pointer-events:none;opacity:0;transition:opacity .3s}.sndtip.on{opacity:1}
 .card{position:absolute;left:12px;bottom:12px;max-width:min(320px,calc(100% - 90px));background:#FFFDF6;color:#1F2A33;border:2px solid #1F2A33;border-radius:16px;padding:12px 16px;z-index:2;box-shadow:0 4px 0 rgba(31,42,51,.25)}
 .card h3{margin:0;font-size:18px}
 .card p{margin:2px 0 0;font-size:13.5px;color:#4E3B2C}
@@ -154,7 +156,7 @@ footer a{color:inherit}
     <div class="mapbox" id="mapbox">
      <canvas id="map" aria-label="Peta dunia berisi rumah para warga"></canvas>
      <div class="badges"><span class="bd dark" id="bdDay">Hari ke-1</span><span class="bd sun" id="bdN">0 warga</span></div>
-     <div class="zoom"><button id="zin" aria-label="Perbesar">+</button><button id="zout" aria-label="Perkecil">−</button><button id="zworld" class="world" aria-label="Lihat seluruh dunia">Dunia</button></div>
+     <div class="zoom"><button type="button" id="snd" class="snd" aria-label="Nyalakan suara suasana peta" aria-pressed="false" title="Suara suasana (ombak, angin, burung)" hidden>🔇</button><button id="zin" aria-label="Perbesar">+</button><button id="zout" aria-label="Perkecil">−</button><button id="zworld" class="world" aria-label="Lihat seluruh dunia">Dunia</button></div>
      <div class="card" id="card" hidden></div>
      <div class="empty" id="empty" hidden></div>
     </div>
@@ -483,7 +485,7 @@ mapC.addEventListener('pointerup',endPtr);mapC.addEventListener('pointercancel',
 mapC.addEventListener('wheel',e=>{e.preventDefault();const p=toCanvas(e);zoomAt(p[0],p[1],Math.exp(-e.deltaY*.0015))},{passive:false});
 mapC.addEventListener('dblclick',e=>{const p=toCanvas(e);zoomAt(p[0],p[1],1.8)});
 function tapAt(p){useMap();C=cam0;let best=null,bd=60;for(const r of EXR){const[x,y]=S(r.p);const dd=Math.hypot(x-p[0],y-25-p[1]);if(dd<bd){bd=dd;best=r}}if(best)select(best,false);else{sel=null;$('card').hidden=true}}
-function select(r,fly){sel=r;const c=$('card');c.hidden=false;c.innerHTML='<h3></h3><p></p><p></p>';c.children[0].textContent=r.name;c.children[1].textContent=cname(r.iso)+(r.note?' · '+r.note:'');const no=SAVED.residents.findIndex(x=>x.user===r.user)+1;c.children[2].textContent='@'+r.user+' · Warga #'+String(no).padStart(3,'0')+(no===1?' · warga pertama 🎉':'');if(fly)flyLL(r.ll,r.iso==='AQ'?60:24)}
+function select(r,fly){sel=r;try{SND.play('pop')}catch(e){}const c=$('card');c.hidden=false;c.innerHTML='<h3></h3><p></p><p></p>';c.children[0].textContent=r.name;c.children[1].textContent=cname(r.iso)+(r.note?' · '+r.note:'');const no=SAVED.residents.findIndex(x=>x.user===r.user)+1;c.children[2].textContent='@'+r.user+' · Warga #'+String(no).padStart(3,'0')+(no===1?' · warga pertama 🎉':'');if(fly)flyLL(r.ll,r.iso==='AQ'?60:24)}
 $('zin').onclick=()=>zoomAt(mapC.width/2,mapC.height/2,1.6);$('zout').onclick=()=>zoomAt(mapC.width/2,mapC.height/2,1/1.6);$('zworld').onclick=()=>{sel=null;$('card').hidden=true;resetCam(true)};
 // pencarian
 function search(qs){const q=norm(qs).trim();const box=$('results');if(!q){box.hidden=true;return[]}
@@ -494,7 +496,7 @@ function search(qs){const q=norm(qs).trim();const box=$('results');if(!q){box.hi
  box.innerHTML='';box.hidden=false;
  if(!hits.length){const p=document.createElement('p');p.textContent='Belum ketemu. Sudah follow dan komen? Rumah baru muncul di episode berikutnya, tiap hari 19.00 WIB.';box.appendChild(p);return[]}
  hits.forEach(h=>{const b=document.createElement('button');b.innerHTML='<span></span><small></small>';b.children[0].textContent=h.label;b.children[1].textContent=h.sub;b.onclick=()=>pick(h);box.appendChild(b)});return hits}
-function pick(h){$('results').hidden=true;if(h.type==='r')select(h.r,true);else{sel=null;$('card').hidden=true;flyLL(d3.geoCentroid(BYISO[h.iso]),h.iso==='RU'||h.iso==='US'||h.iso==='CA'||h.iso==='AQ'?90:34)}}
+function pick(h){$('results').hidden=true;try{SND.play('ting',.6)}catch(e){}if(h.type==='r')select(h.r,true);else{sel=null;$('card').hidden=true;flyLL(d3.geoCentroid(BYISO[h.iso]),h.iso==='RU'||h.iso==='US'||h.iso==='CA'||h.iso==='AQ'?90:34)}}
 let lastHits=[];$('q').addEventListener('input',e=>{lastHits=search(e.target.value)});
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'&&lastHits[0]){e.preventDefault();pick(lastHits[0])}if(e.key==='Escape')$('results').hidden=true});
 function renderFol(){const fol=SAVED.followers||0;const goal=[1000,5000,10000,50000,100000,1e9].find(g=>g>fol);const nf=x=>x.toLocaleString('id-ID');
@@ -521,6 +523,26 @@ function renderInfo(){const n=EXR.length,cs=new Set(EXR.map(r=>r.iso)).size;let 
  const L=SAVED.links||{},A=$('aff');A.innerHTML='';if(L.voucherUrl&&/^https:\/\//.test(L.voucherUrl)){const a=document.createElement('a');a.className='btn sun';a.href=L.voucherUrl;a.target='_blank';a.rel='noopener sponsored';a.textContent=L.voucherLabel||'Voucher hari ini';const sm=document.createElement('small');sm.textContent='Link affiliate';A.append(a,sm);A.hidden=false}else A.hidden=true}
 $('goBtn').onclick=()=>{const h=search($('q').value);if(h[0])pick(h[0]);else $('q').focus()};
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('results').hidden=true});
+
+
+/* ================= suara suasana (ambience + sfx, tanpa musik) ================= */
+const SND=(()=>{let ac=null,master=null,buf=null,fx={},on=false,timer=null,loading=null;const AC=window.AudioContext||window.webkitAudioContext;
+ async function load(u){const r=await fetch(u);if(!r.ok)throw 0;return ac.decodeAudioData(await r.arrayBuffer())}
+ async function init(){if(loading)return loading;ac=new AC();master=ac.createGain();master.gain.value=0;master.connect(ac.destination);
+  loading=Promise.all([load('ambience.mp3').then(b=>buf=b),load('sfx-pop.mp3').then(b=>fx.pop=b).catch(()=>0),load('sfx-ting.mp3').then(b=>fx.ting=b).catch(()=>0)]).catch(()=>{});return loading}
+ function loop(at){if(!on||!buf)return;const X=3,len=buf.duration,s=ac.createBufferSource(),g=ac.createGain();s.buffer=buf;s.connect(g);g.connect(master);
+  g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(1,at+X);g.gain.setValueAtTime(1,at+len-X);g.gain.linearRampToValueAtTime(0,at+len);s.start(at);s.stop(at+len+.05);
+  const next=at+len-X;timer=setTimeout(()=>loop(next),Math.max(0,(next-ac.currentTime-1)*1000))}
+ let starting=false;async function start(){if(on||starting)return;starting=true;await init();starting=false;if(!ac)return;await ac.resume();on=true;master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(.6,ac.currentTime,.6);loop(ac.currentTime+.05)}
+ function stop(){on=false;clearTimeout(timer);if(ac){master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(0,ac.currentTime,.15);setTimeout(()=>{if(!on)ac.suspend()},600)}}
+ function play(n,v){if(!on||!fx[n])return;const s=ac.createBufferSource(),g=ac.createGain();s.buffer=fx[n];g.gain.value=v||.8;s.connect(g);g.connect(ac.destination);s.start()}
+ return{start,stop,play,get on(){return on},ok:!!AC&&location.protocol.startsWith('http')&&!window.claude}})();
+{const b=$('snd');b.hidden=!SND.ok;const tip=document.createElement('div');tip.className='sndtip';$('mapbox').appendChild(tip);
+ const say=m=>{tip.textContent=m;tip.classList.add('on');clearTimeout(say.t);say.t=setTimeout(()=>tip.classList.remove('on'),1800)};
+ const set=v=>{b.textContent=v?'🔊':'🔇';b.setAttribute('aria-pressed',v?'true':'false');b.setAttribute('aria-label',v?'Matikan suara':'Nyalakan suara suasana peta');try{localStorage.setItem('pk-sound',v?'1':'0')}catch(e){}};
+ b.onclick=()=>{if(SND.on){SND.stop();set(false);say('Suara mati')}else{SND.start();set(true);say('Suara ombak & angin menyala 🌊')}};
+ let want=false;try{want=localStorage.getItem('pk-sound')==='1'}catch(e){}
+ if(want&&SND.ok){const once=e=>{if(e.target===b)return;document.removeEventListener('pointerdown',once,true);if(!SND.on){SND.start();set(true)}};document.addEventListener('pointerdown',once,true)}}
 
 /* ================= studio ================= */
 let TODAY={new:[],proposals:[],skipped:[]},EPI=null;
