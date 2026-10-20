@@ -487,10 +487,12 @@ function search(qs){const q=norm(qs).trim();const box=$('results');if(!q){box.hi
 function pick(h){$('results').hidden=true;if(h.type==='r')select(h.r,true);else{sel=null;$('card').hidden=true;flyLL(d3.geoCentroid(BYISO[h.iso]),h.iso==='RU'||h.iso==='US'||h.iso==='CA'||h.iso==='AQ'?90:34)}}
 let lastHits=[];$('q').addEventListener('input',e=>{lastHits=search(e.target.value)});
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'&&lastHits[0]){e.preventDefault();pick(lastHits[0])}if(e.key==='Escape')$('results').hidden=true});
+function renderFol(){const fol=SAVED.followers||0;const goal=[1000,5000,10000,50000,100000,1e9].find(g=>g>fol);const nf=x=>x.toLocaleString('id-ID');
+ $('folNow').textContent=nf(fol);$('folGoal').textContent='dari '+nf(goal)+' follower';const pct=Math.min(100,fol/goal*100);$('folBar').style.width=pct+'%';const M=$('folMeter');M.setAttribute('aria-valuenow',fol);M.setAttribute('aria-valuemax',goal);$('folLeft').textContent=nf(goal-fol)+' follower lagi menuju '+nf(goal)+'.';}
 function renderInfo(){const n=EXR.length,cs=new Set(EXR.map(r=>r.iso)).size;let cap=SAVED.cap||50;while(n>=cap)cap+=50;const fol=SAVED.followers||0;const goal=[1000,5000,10000,50000,100000,1e9].find(g=>g>fol);const nf=x=>x.toLocaleString('id-ID');const day=SAVED.day||1;
  $('kicker').textContent=`Hari ke-${day} · Update tiap hari 19.00 WIB`;$('bdDay').textContent='Hari ke-'+day;$('bdN').textContent=nf(n)+' warga';
  const T0=$('tiles');T0.innerHTML='';[['dark',day,'Hari ke'],['',nf(n),'Warga'],['',nf(cs),'Negara terisi'],['hot',nf(cap-n),'Kavling kosong']].forEach(([c,v,l])=>{const d=document.createElement('div');d.className='tile '+c;d.innerHTML='<b></b><span></span>';d.children[0].textContent=v;d.children[1].textContent=l;T0.appendChild(d)});
- $('folNow').textContent=nf(fol);$('folGoal').textContent='dari '+nf(goal)+' follower';const pct=Math.min(100,fol/goal*100);$('folBar').style.width=pct+'%';const M=$('folMeter');M.setAttribute('aria-valuenow',fol);M.setAttribute('aria-valuemax',goal);$('folLeft').textContent=nf(goal-fol)+' follower lagi menuju '+nf(goal)+'.';
+ renderFol();
  const counts={};EXR.forEach(r=>counts[r.iso]=(counts[r.iso]||0)+1);const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);const T=$('top');T.innerHTML='';
  if(!top.length){T.innerHTML='<p class="muted">Belum ada negara. Negaramu bisa jadi yang pertama.</p>'}
  top.forEach(([iso,c])=>{const b=document.createElement('button');b.className='chip';const fl=FLAGS.find(f=>f.iso===String(iso).toLowerCase());b.innerHTML=(fl?`<img alt="" src="${fl.png}">`:'')+'<span></span><b></b>';b.children[fl?1:0].textContent=cname(iso);b.querySelector('b').textContent=c;b.onclick=()=>{pick({type:'c',iso});$('mapbox').scrollIntoView({behavior:'smooth',block:'center'})};T.appendChild(b)});
@@ -633,6 +635,7 @@ $('studioBtn').onclick=()=>showStudio($('publicView').hidden===false);
 
 /* ================= boot ================= */
 renderInfo();
+if(location.protocol.startsWith('http')&&!window.claude)fetch('/api/followers').then(r=>r.ok?r.json():null).then(j=>{if(j&&Number.isFinite(j.followers)){SAVED.followers=j.followers;renderFol();$('folLeft').textContent+=' Angka langsung dari Instagram.'}}).catch(()=>{});
 const ready=Promise.all([document.fonts.load('800 40px Poppins'),document.fonts.load('600 40px Poppins'),...FLAGIMG.map(f=>f.im.decode().catch(()=>0))]).catch(()=>0);
 ready.then(()=>{sizeMap();requestAnimationFrame(exDraw)});
 window.addEventListener('resize',()=>{const z=cam0&&cam0.z;sizeMap();if(cam0)cam0.z=clamp(z,zMin(),zMax())});
