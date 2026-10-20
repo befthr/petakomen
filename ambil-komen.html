@@ -104,12 +104,12 @@ $('loadPosts').onclick=async()=>{const t=token();if(!t){say('Isi token dulu.');r
  $('loadPosts').disabled=false};
 $('fetch').onclick=async()=>{const t=token(),id=$('post').value;if(!t||!id)return;
  $('fetch').disabled=true;say('Mengambil komentar…',true);
- const F='id,username,text,timestamp,like_count';
+ const F='id,username,from,text,timestamp,like_count';
  try{const top=await all(API+id+'/comments?fields='+F+',replies{'+F+'}&limit=50&access_token='+encodeURIComponent(t));
-  let rows=[];
-  for(let i=0;i<top.length;i++){const c=top[i];rows.push({...c,type:'komentar',reply_to:''});
+  let rows=[];const U=x=>x.username||(x.from&&x.from.username)||'';
+  for(let i=0;i<top.length;i++){const c=top[i];rows.push({...c,username:U(c),type:'komentar',reply_to:''});
    if($('withReplies').checked&&c.replies){let reps=c.replies.data||[];if(c.replies.paging&&c.replies.paging.next){reps=reps.concat(await all(c.replies.paging.next))}
-    reps.forEach(r=>rows.push({...r,type:'balasan',reply_to:c.username}))}
+    reps.forEach(r=>rows.push({...r,username:U(r),type:'balasan',reply_to:U(c)}))}
    if(i%10===0)say(`Mengambil komentar… ${i+1}/${top.length}`,true)}
   const cut=$('cut').value?new Date($('cut').value+':00+07:00'):null;
   const before=rows.length;
