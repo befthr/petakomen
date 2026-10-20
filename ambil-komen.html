@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Ambil Komen · Peta Komen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF4EF;--ink:#1F2A33;--muted:#5B6B70;--card:#FFFDF6;--line:#D3DDD6;--field:#FFFFFF;--brick:#E8553B;--sun:#F2B33D;--leaf:#5BB06A;--blue:#3D8BD9;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121A1E;--ink:#EEF2EC;--muted:#9CACAF;--card:#1B252A;--line:#2C3A40;--field:#0F1518;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif;padding:24px max(16px,env(safe-area-inset-left,0px)) 40px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;align-items:center;gap:12px}
+header img{width:44px;height:44px;border-radius:50%;background:#F6EBD3}
+h1{margin:0;font-size:clamp(26px,4vw,34px);font-weight:800;letter-spacing:-.02em}
+.lead{margin:0;color:var(--muted)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px}
+label{font-weight:700;font-size:14px}
+input,select{font:inherit;font-size:15px;background:var(--field);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;width:100%}
+input[type=checkbox]{width:auto}
+.chk{display:flex;gap:8px;align-items:center;font-weight:500;font-size:14px;color:var(--muted)}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px 18px;cursor:pointer;background:var(--ink);color:var(--bg)}
+button.go{background:var(--brick);color:#fff}
+button.soft{background:var(--field);color:var(--ink);border:1.5px solid var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.status{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--brick);min-height:1.2em;margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:8px}
+.stat{background:var(--field);border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13.5px}
+.stat b{font-variant-numeric:tabular-nums}
+.tbl{overflow:auto;border:1.5px solid var(--line);border-radius:12px;max-height:60vh}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{position:sticky;top:0;background:var(--card);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.u{font-weight:600;white-space:nowrap}
+td.t{min-width:260px}
+td.n{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap}
+tr.reply td.t::before{content:"↳ ";color:var(--muted)}
+tr.reply td{background:color-mix(in srgb,var(--field) 70%,transparent)}
+.note{font-size:13px;color:var(--muted);margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <header><img src="/favicon-192.png" alt=""><h1>Ambil Komen</h1></header>
+ <p class="lead">Alat pribadi @petakomen. Token hanya disimpan di browser ini dan hanya dikirim ke graph.instagram.com.</p>
+
+ <div class="card">
+  <div class="row">
+   <div class="f"><label for="tok">Token Instagram</label><input id="tok" type="password" autocomplete="off" spellcheck="false" placeholder="IGAA..."></div>
+   <button id="loadPosts">Muat postingan</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="remember"> Ingat token di browser ini</label>
+ </div>
+
+ <div class="card">
+  <div class="row">
+   <div class="f" style="flex:2"><label for="post">Postingan</label><select id="post" disabled><option>Muat postingan dulu</option></select></div>
+   <div class="f"><label for="cut">Batas waktu komen (WIB, opsional)</label><input id="cut" type="datetime-local"></div>
+   <button class="go" id="fetch" disabled>Ambil semua komentar</button>
+  </div>
+  <div class="row">
+   <label class="chk"><input type="checkbox" id="withReplies" checked> Sertakan balasan</label>
+   <label class="chk"><input type="checkbox" id="skipOwn" checked> Lewati komentar @petakomen sendiri</label>
+  </div>
+  <p class="status" id="status" role="status"></p>
+ </div>
+
+ <div class="card" id="out" hidden>
+  <div class="stats" id="stats"></div>
+  <div class="row">
+   <button id="dlCsv">Unduh CSV</button>
+   <button class="soft" id="copyStudio">Salin untuk Studio</button>
+  </div>
+  <p class="note">CSV-nya bisa langsung dikirim ke Claude untuk episode berikutnya, atau tempel hasil "Salin untuk Studio" di kotak Komentar pada Studio.</p>
+  <div class="tbl"><table><thead><tr><th>Username</th><th>Komentar</th><th>Like</th><th>Waktu (WIB)</th></tr></thead><tbody id="rows"></tbody></table></div>
+ </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const API='https://graph.instagram.com/v23.0/';
+const OWN='petakomen';
+let ROWS=[],POSTS=[];
+try{const t=localStorage.getItem('pk_ig_token');if(t){$('tok').value=t;$('remember').checked=true}}catch(e){}
+const say=(m,ok)=>{$('status').textContent=m;$('status').style.color=ok?'var(--leaf)':'var(--brick)'};
+const wib=iso=>new Date(iso).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+async function get(url){const r=await fetch(url);const j=await r.json().catch(()=>({}));if(!r.ok||j.error){const m=(j.error&&j.error.message)||('HTTP '+r.status);throw new Error(m)}return j}
+async function all(url,max=40){let out=[],n=0;while(url&&n<max){const j=await get(url);out=out.concat(j.data||[]);url=j.paging&&j.paging.next;n++}return out}
+function token(){const t=$('tok').value.trim();try{if($('remember').checked)localStorage.setItem('pk_ig_token',t);else localStorage.removeItem('pk_ig_token')}catch(e){}return t}
+$('remember').onchange=token;
+$('loadPosts').onclick=async()=>{const t=token();if(!t){say('Isi token dulu.');return}
+ say('Memuat postingan…',true);$('loadPosts').disabled=true;
+ try{POSTS=await all(API+'me/media?fields=id,caption,timestamp,comments_count,permalink&limit=50&access_token='+encodeURIComponent(t),4);
+  const s=$('post');s.innerHTML='';POSTS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=`${wib(p.timestamp)} · ${(p.caption||'(tanpa caption)').split('\n')[0].slice(0,60)} · ${p.comments_count} komen`;s.appendChild(o)});
+  s.disabled=!POSTS.length;$('fetch').disabled=!POSTS.length;say(POSTS.length?`${POSTS.length} postingan dimuat. Pilih postingan, lalu ambil komentar.`:'Belum ada postingan.',true)}
+ catch(e){say('Gagal: '+e.message+'. Cek tokennya, mungkin salah atau sudah kedaluwarsa.')}
+ $('loadPosts').disabled=false};
+$('fetch').onclick=async()=>{const t=token(),id=$('post').value;if(!t||!id)return;
+ $('fetch').disabled=true;say('Mengambil komentar…',true);
+ const F='id,username,text,timestamp,like_count';
+ try{const top=await all(API+id+'/comments?fields='+F+',replies{'+F+'}&limit=50&access_token='+encodeURIComponent(t));
+  let rows=[];
+  for(let i=0;i<top.length;i++){const c=top[i];rows.push({...c,type:'komentar',reply_to:''});
+   if($('withReplies').checked&&c.replies){let reps=c.replies.data||[];if(c.replies.paging&&c.replies.paging.next){reps=reps.concat(await all(c.replies.paging.next))}
+    reps.forEach(r=>rows.push({...r,type:'balasan',reply_to:c.username}))}
+   if(i%10===0)say(`Mengambil komentar… ${i+1}/${top.length}`,true)}
+  const cut=$('cut').value?new Date($('cut').value+':00+07:00'):null;
+  const before=rows.length;
+  rows=rows.filter(r=>!($('skipOwn').checked&&String(r.username).toLowerCase()===OWN)).filter(r=>!cut||new Date(r.timestamp)<=cut);
+  rows.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  ROWS=rows;render(top.length,before);say(`Selesai: ${rows.length} baris siap diunduh.`,true)}
+ catch(e){say('Gagal: '+e.message)}
+ $('fetch').disabled=false};
+function render(nTop,nAll){const tb=$('rows');tb.innerHTML='';
+ for(const r of ROWS){const tr=document.createElement('tr');if(r.type==='balasan')tr.className='reply';
+  [['u','@'+r.username],['t',r.text||''],['n',String(r.like_count||0)],['n',wib(r.timestamp)]].forEach(([c,v])=>{const td=document.createElement('td');td.className=c;td.textContent=v;tr.appendChild(td)});tb.appendChild(tr)}
+ const users=new Set(ROWS.map(r=>r.username)).size,k=ROWS.filter(r=>r.type==='komentar').length;
+ $('stats').innerHTML='';[[k,'komentar'],[ROWS.length-k,'balasan'],[users,'akun unik']].forEach(([n,l])=>{const s=document.createElement('span');s.className='stat';s.innerHTML='<b></b> ';s.firstChild.textContent=n;s.append(l);$('stats').appendChild(s)});
+ $('out').hidden=false}
+const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+$('dlCsv').onclick=()=>{const head=['username','comment','likes','timestamp_wib','type','reply_to','id'];
+ const lines=[head.join(',')].concat(ROWS.map(r=>[r.username,r.text,r.like_count||0,new Date(r.timestamp).toLocaleString('sv-SE',{timeZone:'Asia/Jakarta'}),r.type,r.reply_to,r.id].map(q).join(',')));
+ const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const p=POSTS.find(x=>x.id===$('post').value);
+ const d=p?new Date(p.timestamp).toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}):'post';
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`petakomen-komen-${d}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+$('copyStudio').onclick=async()=>{const txt=ROWS.filter(r=>r.type==='komentar').map(r=>`@${r.username} | ${(r.text||'').replace(/\|/g,'/').replace(/\n/g,' ')} | ${r.like_count||0}`).join('\n');
+ try{await navigator.clipboard.writeText(txt);say('Tersalin. Tempel di kotak Komentar pada Studio.',true)}catch(e){say('Gagal menyalin otomatis.')}};
+</script>
+</body>
+</html>
