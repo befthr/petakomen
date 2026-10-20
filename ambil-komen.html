@@ -87,7 +87,7 @@ tr.reply td{background:color-mix(in srgb,var(--field) 70%,transparent)}
 const $=id=>document.getElementById(id);
 const API='https://graph.instagram.com/v23.0/';
 const OWN='petakomen';
-let ROWS=[],POSTS=[];
+let ROWS=[],POSTS=[],FOL=null;
 try{const t=localStorage.getItem('pk_ig_token');if(t){$('tok').value=t;$('remember').checked=true}}catch(e){}
 const say=(m,ok)=>{$('status').textContent=m;$('status').style.color=ok?'var(--leaf)':'var(--brick)'};
 const wib=iso=>new Date(iso).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -97,9 +97,10 @@ function token(){const t=$('tok').value.trim();try{if($('remember').checked)loca
 $('remember').onchange=token;
 $('loadPosts').onclick=async()=>{const t=token();if(!t){say('Isi token dulu.');return}
  say('Memuat postingan…',true);$('loadPosts').disabled=true;
- try{POSTS=await all(API+'me/media?fields=id,caption,timestamp,comments_count,permalink&limit=50&access_token='+encodeURIComponent(t),4);
+ try{const me=await get(API+'me?fields=username,followers_count,media_count&access_token='+encodeURIComponent(t));FOL=me.followers_count;
+  POSTS=await all(API+'me/media?fields=id,caption,timestamp,comments_count,permalink&limit=50&access_token='+encodeURIComponent(t),4);
   const s=$('post');s.innerHTML='';POSTS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=`${wib(p.timestamp)} · ${(p.caption||'(tanpa caption)').split('\n')[0].slice(0,60)} · ${p.comments_count} komen`;s.appendChild(o)});
-  s.disabled=!POSTS.length;$('fetch').disabled=!POSTS.length;say(POSTS.length?`${POSTS.length} postingan dimuat. Pilih postingan, lalu ambil komentar.`:'Belum ada postingan.',true)}
+  s.disabled=!POSTS.length;$('fetch').disabled=!POSTS.length;say((FOL!=null?`Follower @${me.username} sekarang: ${FOL.toLocaleString('id-ID')}. `:'')+(POSTS.length?`${POSTS.length} postingan dimuat. Pilih postingan, lalu ambil komentar.`:'Belum ada postingan.'),true)}
  catch(e){say('Gagal: '+e.message+'. Cek tokennya, mungkin salah atau sudah kedaluwarsa.')}
  $('loadPosts').disabled=false};
 $('fetch').onclick=async()=>{const t=token(),id=$('post').value;if(!t||!id)return;
@@ -122,14 +123,14 @@ function render(nTop,nAll){const tb=$('rows');tb.innerHTML='';
  for(const r of ROWS){const tr=document.createElement('tr');if(r.type==='balasan')tr.className='reply';
   [['u','@'+r.username],['t',r.text||''],['n',String(r.like_count||0)],['n',wib(r.timestamp)]].forEach(([c,v])=>{const td=document.createElement('td');td.className=c;td.textContent=v;tr.appendChild(td)});tb.appendChild(tr)}
  const users=new Set(ROWS.map(r=>r.username)).size,k=ROWS.filter(r=>r.type==='komentar').length;
- $('stats').innerHTML='';[[k,'komentar'],[ROWS.length-k,'balasan'],[users,'akun unik']].forEach(([n,l])=>{const s=document.createElement('span');s.className='stat';s.innerHTML='<b></b> ';s.firstChild.textContent=n;s.append(l);$('stats').appendChild(s)});
+ $('stats').innerHTML='';[[k,'komentar'],[ROWS.length-k,'balasan'],[users,'akun unik']].concat(FOL!=null?[[FOL,'follower']]:[]).forEach(([n,l])=>{const s=document.createElement('span');s.className='stat';s.innerHTML='<b></b> ';s.firstChild.textContent=n;s.append(l);$('stats').appendChild(s)});
  $('out').hidden=false}
 const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
 $('dlCsv').onclick=()=>{const head=['username','comment','likes','timestamp_wib','type','reply_to','id'];
  const lines=[head.join(',')].concat(ROWS.map(r=>[r.username,r.text,r.like_count||0,new Date(r.timestamp).toLocaleString('sv-SE',{timeZone:'Asia/Jakarta'}),r.type,r.reply_to,r.id].map(q).join(',')));
  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const p=POSTS.find(x=>x.id===$('post').value);
  const d=p?new Date(p.timestamp).toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}):'post';
- const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`petakomen-komen-${d}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`petakomen-komen-${d}`+(FOL!=null?`-follower${FOL}`:'')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
 $('copyStudio').onclick=async()=>{const txt=ROWS.filter(r=>r.type==='komentar').map(r=>`@${r.username} | ${(r.text||'').replace(/\|/g,'/').replace(/\n/g,' ')} | ${r.like_count||0}`).join('\n');
  try{await navigator.clipboard.writeText(txt);say('Tersalin. Tempel di kotak Komentar pada Studio.',true)}catch(e){say('Gagal menyalin otomatis.')}};
 </script>
