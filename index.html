@@ -495,9 +495,12 @@ function exDraw(now){if(!exRun)return;sizeMap();useMap();const t=(now-exT0)/1000
  const hs=clamp(.1+.45*d,.24,.7);const[ix,iy]=S(P([110.4,-7.2]));house('gadang',ix,iy,hs,1,0);
  const[mx,my]=S(P([46.8,-19.5]));cat(mx,my,hs*.85,t);
  for(const b of EXB){const[x,y]=S(b.p);if(x<-200||x>SW+200||y<-300||y>SH+100)continue;landmark(b.label,x,y,hs*2,t)}
- const vis=[];for(const r of EXR){const[x,y]=S(r.p);if(x<-80||x>SW+80||y<-120||y>SH+60)continue;let s=1;if(sel&&sel.user===r.user)s=1.6+.08*Math.sin(t*5);house(r.type,x,y,hs*s,1,0,r.roof);vis.push({r,x,y,s})}
- if(sel){const v=vis.find(o=>o.r.user===sel.user);if(v){ctx.strokeStyle='rgba(232,85,59,.85)';ctx.lineWidth=5;const R=40+12*Math.sin(t*4);ctx.beginPath();ctx.ellipse(v.x,v.y,R*1.4*hs*2,R*.45*hs*2,0,0,7);ctx.stroke()}}
- if(d>.85){vis.sort((a,b)=>Math.hypot(a.x-FX,a.y-FY)-Math.hypot(b.x-FX,b.y-FY));vis.slice(0,24).forEach(({r,x,y,s})=>{const on=sel&&sel.user===r.user;pill(r.name,x,y-hs*s*95-26,F(800,on?32:26),on?'#E8553B':'#3A2E24','#FFFFFF',on?54:44)})}
+ const vis=[];for(const r of EXR){const[x,y]=S(r.p);if(x<-80||x>SW+80||y<-120||y>SH+60)continue;vis.push({r,x,y,s:1})}
+ vis.sort((a,b)=>a.y-b.y);let selV=null;for(const v of vis){if(sel&&sel.user===v.r.user){selV=v;continue}house(v.r.type,v.x,v.y,hs,1,0,v.r.roof)}
+ if(selV){selV.s=1.6+.08*Math.sin(t*5);ctx.strokeStyle='rgba(232,85,59,.85)';ctx.lineWidth=5;const R=40+12*Math.sin(t*4);ctx.beginPath();ctx.ellipse(selV.x,selV.y,R*1.4*hs*2,R*.45*hs*2,0,0,7);ctx.stroke();house(selV.r.type,selV.x,selV.y,hs*selV.s,1,0,selV.r.roof)}
+ if(d>.85){const boxes=[];const fits=(x,y,w,h)=>!boxes.some(b=>x<b[0]+b[2]+6&&x+w+6>b[0]&&y<b[1]+b[3]+4&&y+h+4>b[1]);
+  const lab=(v,on)=>{const fs=on?32:24,hh=on?54:40;ctx.font=F(800,fs);const w=ctx.measureText(v.r.name).width+hh*.9;const y=v.y-hs*v.s*95-26;if(!on&&!fits(v.x-w/2,y-hh/2,w,hh))return false;boxes.push([v.x-w/2,y-hh/2,w,hh]);pill(v.r.name,v.x,y,F(800,fs),on?'#E8553B':'#3A2E24','#FFFFFF',hh);return true};
+  if(selV)lab(selV,true);let n=0;vis.slice().sort((a,b)=>Math.hypot(a.x-FX,a.y-FY)-Math.hypot(b.x-FX,b.y-FY)).forEach(v=>{if(v===selV||n>=18)return;if(lab(v,false))n++})}
  if(d>.6)pill('Aku',ix,iy-hs*95-26,F(800,28),'#3A2E24','#FFFFFF',44);
  for(const c of ECL){const[x,y]=S([c.p[0]+t*c.v,c.p[1]]);const r=clamp(c.r*C.z,9,90);if(x<-r*3||x>SW+r*3||y<-r*3||y>SH+r*3)continue;const s=r/46;ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(50,80,100,.12)';ctx.beginPath();ctx.ellipse(14,78,110,18,0,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.88)';ctx.beginPath();ctx.arc(-50,10,34,0,7);ctx.arc(0,-8,46,0,7);ctx.arc(52,8,36,0,7);ctx.fill();rr(-84,8,172,38,19);ctx.fill();ctx.restore()}
  requestAnimationFrame(exDraw)}
